@@ -28,7 +28,7 @@ void Block::MineBlock(std::uint32_t nDifficulty)
         _nNonce++;
         _sHash = _CalculateHash();
     }
-    while (_sHash.substr(0, nDifficulty) != str);
+    while (!_sHash.starts_with(str));
 
     std::cout << "Block mined: " << _sHash << std::endl;
 }
