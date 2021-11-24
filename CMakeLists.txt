@@ -9,7 +9,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
-  add_compile_definitions(MPVJP__DEBUG)
+  add_compile_definitions(SRPF__DEBUG)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX)
