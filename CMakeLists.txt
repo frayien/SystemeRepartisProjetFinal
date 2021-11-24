@@ -30,6 +30,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "../")
 ### Project headers ###
 include_directories(include)
 
+### Project Dependencies ###
+add_subdirectory(./lib/sha256)
+include_directories(./lib/sha256)
+
 ### Project sources ###
 file(GLOB_RECURSE SRCS ./src/*)
 file(GLOB_RECURSE HEADERS ./include/*)
@@ -42,4 +46,5 @@ include(CPack)
 
 target_link_libraries(
     Proj
+    sha256
 )
