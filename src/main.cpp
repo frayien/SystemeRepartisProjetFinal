@@ -1,8 +1,10 @@
 #include <iostream>
 
+#include <SFML/Network.hpp>
+
 #include "Blockchain.hpp"
 
-int main()
+int main(int argc, char** argv)
 {
     Blockchain bChain = Blockchain();
 

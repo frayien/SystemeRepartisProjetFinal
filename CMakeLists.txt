@@ -25,6 +25,8 @@ else(CMAKE_COMPILER_IS_GNUCXX)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "../")
 
 ### Project headers ###
@@ -34,8 +36,11 @@ include_directories(include)
 add_subdirectory(./lib/sha256)
 include_directories(./lib/sha256)
 
+set(BUILD_SHARED_LIBS OFF)
+find_package(SFML 2.5.1 COMPONENTS network REQUIRED)
+
 ### Project sources ###
-file(GLOB_RECURSE SRCS ./src/*)
+file(GLOB_RECURSE SRCS ./src/SFML-2.5.1/cmake*)
 file(GLOB_RECURSE HEADERS ./include/*)
 
 add_executable(Proj ${HEADERS} ${SRCS})
@@ -47,4 +52,5 @@ include(CPack)
 target_link_libraries(
     Proj
     sha256
+    sfml-network
 )
