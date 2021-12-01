@@ -6,8 +6,9 @@
 
 int main(int argc, char** argv)
 {
-    sf::IpAddress ip;
-    Blockchain bChain = Blockchain();
+    sf::IpAddress ip{};
+    
+    Blockchain bChain{};
 
     std::cout << "Mining block 1..." << std::endl;
     bChain.AddBlock(Block(1, "Block 1 Data"));
