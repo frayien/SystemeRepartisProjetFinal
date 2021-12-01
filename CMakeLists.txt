@@ -34,16 +34,23 @@ include_directories(include)
 
 ### Project Dependencies ###
 add_subdirectory(./lib/sha256)
-include_directories(./lib/sha256)
+include_directories(./lib/sha256/include)
 
 set(BUILD_SHARED_LIBS OFF)
-find_package(SFML 2.5.1 COMPONENTS network REQUIRED)
+set(SFML_BUILD_EXAMPLES OFF)
+set(SFML_BUILD_DOC OFF)
+set(SFML_BUILD_AUDIO OFF)
+set(SFML_BUILD_GRAPHICS OFF)
+set(SFML_BUILD_WINDOW OFF)
+
+set(SFML_BUILD_NETWORK ON)
+
+add_subdirectory(./lib/SFML-2.5.1)
 
 ### Project sources ###
-file(GLOB_RECURSE SRCS ./src/SFML-2.5.1/cmake*)
-file(GLOB_RECURSE HEADERS ./include/*)
+file(GLOB_RECURSE SRCS ./src/*)
 
-add_executable(Proj ${HEADERS} ${SRCS})
+add_executable(Proj ${SRCS})
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

@@ -6,6 +6,7 @@
 
 int main(int argc, char** argv)
 {
+    sf::IpAddress ip;
     Blockchain bChain = Blockchain();
 
     std::cout << "Mining block 1..." << std::endl;
