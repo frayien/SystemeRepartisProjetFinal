@@ -23,6 +23,9 @@ private:
 
     Blockchain m_blockchain;
 
+    bool m_currentlyMining = false;
+    std::string m_nextBlockData;
+
     void sendOk(sf::IpAddress remoteAddress, std::uint16_t remotePort);
     void sendError(sf::IpAddress remoteAddress, std::uint16_t remotePort, std::string msg);
 

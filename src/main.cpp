@@ -51,6 +51,14 @@ int main(int argc, char** argv)
     client.connect();
     client.sendTransaction("block 1");
 
+    client.sendTransaction("block 2");
+    client.sendTransaction("block 3");
+    client.sendTransaction("block 4");
+
+    sf::sleep(sf::seconds(2.f));
+
+    client.sendTransaction("block 5");
+
     }
     catch(const std::exception& e)
     {

@@ -94,11 +94,15 @@ void Server::handleTransaction(sf::Packet & packet)
     std::string transaction;
     packet >> transaction;
 
-    createBlock(transaction);
+    m_nextBlockData += transaction;
+
+    if(!m_currentlyMining) createBlock(transaction);
 }
 
 void Server::createBlock(std::string data)
 {
+    m_currentlyMining = true;
+
     auto previousIndex = m_blockchain.GetLastBlock().nIndex;
     Block block(data);
 
@@ -136,6 +140,17 @@ void Server::handleValidBlock(sf::Packet & packet)
     m_blockchain.AddBlock(block);
 
     sendEndMining();
+    
+    if(!m_nextBlockData.empty())
+    {
+        std::string data = m_nextBlockData;
+        m_nextBlockData.clear();
+        createBlock(data);
+    }
+    else
+    {
+        m_currentlyMining = false;
+    }
 }
 
 void Server::sendEndMining()

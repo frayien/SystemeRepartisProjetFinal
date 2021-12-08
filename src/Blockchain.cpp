@@ -9,7 +9,7 @@ Blockchain::Blockchain()
     initialBlock.nIndex = 0;
 
     _vChain.emplace_back(initialBlock);
-    _nDifficulty = 6;
+    _nDifficulty = 2;
 }
 
 void Blockchain::prepareBlock(Block & block)
