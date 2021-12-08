@@ -10,28 +10,18 @@
 
 int main(int argc, char** argv)
 {
-/*
-    Blockchain bChain{};
-
-    std::cout << "Mining block 1..." << std::endl;
-    bChain.AddBlock(Block(1, "Block 1 Data"));
-
-    std::cout << "Mining block 2..." << std::endl;
-    bChain.AddBlock(Block(2, "Block 2 Data"));
-
-    std::cout << "Mining block 3..." << std::endl;
-    bChain.AddBlock(Block(3, "Block 3 Data"));
-*/
-
-    Server serv(5643);
+    try
+    {
+    
+    Server server(5643);
     bool running = true;
 
-    sf::Thread th([&](){
+    sf::Thread thread_server([&](){
         while(running)
         {
             try
             {
-                serv.run();
+                server.run();
             }
             catch(const std::exception& e)
             {
@@ -39,13 +29,28 @@ int main(int argc, char** argv)
             }
         }
     });
-    th.launch();
+    thread_server.launch();
 
-    try
-    {
-        Client cli(sf::IpAddress("localhost"), 5643);
-        sf::sleep(sf::seconds(2));
-        running = false;
+    Client client(sf::IpAddress("localhost"), 5643);
+
+    sf::Thread thread_client([&](){
+        while(running)
+        {
+            try
+            {
+                client.run();
+            }
+            catch(const std::exception& e)
+            {
+                std::cerr << e.what() << '\n';
+            }
+        }
+    });
+    thread_client.launch();
+
+    client.connect();
+    client.sendTransaction("block 1");
+
     }
     catch(const std::exception& e)
     {

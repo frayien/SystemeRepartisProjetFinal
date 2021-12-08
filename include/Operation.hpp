@@ -11,6 +11,9 @@ enum class Operation : std::uint8_t
     CONNECT = 1,
     DISCONNECT = 2,
     TRANSACTION = 3,
+    REQUEST_VALIDATION = 4,
+    VALID_BLOCK = 5,
+    END_MINING = 6,
     OK = 10,
     ERROR = 11,
 };

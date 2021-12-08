@@ -31,6 +31,8 @@ void Server::run()
         throw std::runtime_error("Attempted to read beyond the packet size.");
     }
 
+    std::cout << "[SERVER] received op " << static_cast<int>(op) << std::endl;
+
     switch(op)
     {
     case Operation::NO_OP:
@@ -42,6 +44,10 @@ void Server::run()
         disconnect(remoteAddress, remotePort);
         break;
     case Operation::TRANSACTION:
+        handleTransaction(packet);
+        break;
+    case Operation::VALID_BLOCK:
+        handleValidBlock(packet);
         break;
     default:
         throw std::runtime_error("Unsupported operation.");
@@ -81,4 +87,67 @@ void Server::disconnect(sf::IpAddress remoteAddress, std::uint16_t remotePort)
 {
     m_clients.remove({remoteAddress, remotePort});
     sendOk(remoteAddress, remotePort);
+}
+
+void Server::handleTransaction(sf::Packet & packet)
+{
+    std::string transaction;
+    packet >> transaction;
+
+    createBlock(transaction);
+}
+
+void Server::createBlock(std::string data)
+{
+    auto previousIndex = m_blockchain.GetLastBlock().nIndex;
+    Block block(data);
+
+    m_blockchain.prepareBlock(block);
+
+    sendBlockForValidation(block);
+}
+
+void Server::sendBlockForValidation(const Block & block)
+{
+    sf::Packet packet;
+    packet << Operation::REQUEST_VALIDATION;
+    packet << m_blockchain.getDifficulty();
+    packet << block;
+
+    for(const auto & [ipaddr, port] : m_clients)
+    {
+        if(m_socket.send(packet, ipaddr, port) != sf::Socket::Done)
+        {
+            throw std::runtime_error("Error while sending a block for validation.");
+        }
+    }
+}
+
+void Server::handleValidBlock(sf::Packet & packet)
+{
+    Block block;
+    packet >> block;
+
+    m_blockchain.prepareBlock(block);
+
+    if(block.CalculateHash() != block.sHash)
+        return;
+
+    m_blockchain.AddBlock(block);
+
+    sendEndMining();
+}
+
+void Server::sendEndMining()
+{
+    sf::Packet packet;
+    packet << Operation::END_MINING;
+
+    for(const auto & [ipaddr, port] : m_clients)
+    {
+        if(m_socket.send(packet, ipaddr, port) != sf::Socket::Done)
+        {
+            throw std::runtime_error("Error while sending end mining.");
+        }
+    }
 }

@@ -7,6 +7,8 @@
 #include <cstdint>
 #include <utility>
 
+#include "Blockchain.hpp"
+
 class Server
 {
 public:
@@ -19,11 +21,21 @@ private:
     sf::UdpSocket m_socket;
     std::forward_list<std::pair<sf::IpAddress, std::uint16_t>> m_clients;
 
+    Blockchain m_blockchain;
+
     void sendOk(sf::IpAddress remoteAddress, std::uint16_t remotePort);
     void sendError(sf::IpAddress remoteAddress, std::uint16_t remotePort, std::string msg);
 
     void connect(sf::IpAddress remoteAddress, std::uint16_t remotePort);
     void disconnect(sf::IpAddress remoteAddress, std::uint16_t remotePort);
+
+    void handleTransaction(sf::Packet & packet);
+    void createBlock(std::string data);
+
+    void sendBlockForValidation(const Block & block);
+
+    void handleValidBlock(sf::Packet & packet);
+    void sendEndMining();
 };
 
 #endif // SRPF_SERVER

@@ -7,25 +7,25 @@
 #include <cstdint>
 #include <iostream>
 
+#include <SFML/Network/Packet.hpp>
+
 class Block
 {
 public:
     std::string sPrevHash;
+    std::uint32_t nIndex;
+    std::int64_t  nNonce;
+    std::string   sData;
+    std::string   sHash;
+    std::time_t   tTime;
 
-    Block(std::uint32_t nIndexIn, const std::string &sDataIn);
+    Block() = default;
+    Block(const std::string &sDataIn);
 
-    std::string GetHash();
+    friend sf::Packet& operator>>(sf::Packet& in, Block& block);
+    friend sf::Packet& operator<<(sf::Packet& out, const Block& block);
 
-    void MineBlock(std::uint32_t nDifficulty);
-
-private:
-    std::uint32_t _nIndex;
-    std::int64_t  _nNonce;
-    std::string   _sData;
-    std::string   _sHash;
-    std::time_t   _tTime;
-
-    std::string _CalculateHash() const;
+    std::string CalculateHash() const;
 };
 
 #endif // SRPF_BLOCK

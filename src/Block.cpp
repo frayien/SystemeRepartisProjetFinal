@@ -6,37 +6,39 @@
 
 #include <sstream>
 
-Block::Block(std::uint32_t nIndexIn, const std::string &sDataIn) : 
-    _nIndex(nIndexIn),
-    _sData(sDataIn)
+Block::Block(const std::string &sDataIn) :
+    sData(sDataIn)
 {
-    _nNonce = -1;
-    _tTime = std::time(nullptr);
+    nNonce = -1;
+    tTime = std::time(nullptr);
 }
 
-std::string Block::GetHash()
-{
-    return _sHash;
-}
-
-void Block::MineBlock(std::uint32_t nDifficulty)
-{
-    std::string str(nDifficulty, '0');
-
-    do
-    {
-        _nNonce++;
-        _sHash = _CalculateHash();
-    }
-    while (!_sHash.starts_with(str));
-
-    std::cout << "Block mined: " << _sHash << std::endl;
-}
-
-inline std::string Block::_CalculateHash() const
+std::string Block::CalculateHash() const
 {
     std::stringstream ss;
-    ss << _nIndex << _tTime << _sData << _nNonce << sPrevHash;
+    ss << nIndex << tTime << sData << nNonce << sPrevHash;
 
     return sha256(ss.str());
+}
+
+sf::Packet& operator>>(sf::Packet& in, Block& block)
+{
+    return in
+        >> block.sPrevHash
+        >> block.nIndex
+        >> block.nNonce
+        >> block.sData
+        >> block.sHash
+        >> block.tTime;
+}
+
+sf::Packet& operator<<(sf::Packet& out, const Block& block)
+{
+    return out
+        << block.sPrevHash
+        << block.nIndex
+        << block.nNonce
+        << block.sData
+        << block.sHash
+        << block.tTime;
 }

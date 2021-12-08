@@ -13,13 +13,16 @@ class Blockchain
 public:
     Blockchain();
 
+    void prepareBlock(Block & block);
     void AddBlock(Block bNew);
+
+    Block GetLastBlock() const;
+
+    inline std::uint32_t getDifficulty() { return _nDifficulty; }
 
 private:
     std::uint32_t _nDifficulty;
     std::vector<Block> _vChain;
-
-    Block _GetLastBlock() const;
 };
 
 #endif // SRPF_BLOCKCHAIN
