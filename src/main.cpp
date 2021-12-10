@@ -13,7 +13,7 @@ int main(int argc, char** argv)
     try
     {
     
-    Server server(5643);
+    Server server(5643, 4);
     bool running = true;
 
     sf::Thread thread_server([&](){

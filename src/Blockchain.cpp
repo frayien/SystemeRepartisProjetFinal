@@ -3,13 +3,13 @@
 // selon l'article : https://davenash.com/2017/10/build-a-blockchain-with-c/
 // cf : Blockchain-LICENSE.txt
 
-Blockchain::Blockchain()
+Blockchain::Blockchain(std::uint32_t difficulty) :
+    _nDifficulty(difficulty)
 {
     Block initialBlock("Genesis Block");
     initialBlock.nIndex = 0;
 
     _vChain.emplace_back(initialBlock);
-    _nDifficulty = 2;
 }
 
 void Blockchain::prepareBlock(Block & block)

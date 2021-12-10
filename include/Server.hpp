@@ -12,7 +12,7 @@
 class Server
 {
 public:
-    Server(std::uint16_t port);
+    Server(std::uint16_t port, std::uint32_t difficulty);
     ~Server();
 
     void run();

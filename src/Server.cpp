@@ -4,7 +4,8 @@
 
 #include <stdexcept>
 
-Server::Server(std::uint16_t port)
+Server::Server(std::uint16_t port, std::uint32_t difficulty) :
+    m_blockchain(difficulty)
 {
     m_socket.bind(port);
 }

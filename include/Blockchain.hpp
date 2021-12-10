@@ -11,7 +11,7 @@
 class Blockchain
 {
 public:
-    Blockchain();
+    Blockchain(std::uint32_t difficulty);
 
     void prepareBlock(Block & block);
     void AddBlock(Block bNew);
