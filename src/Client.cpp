@@ -3,6 +3,7 @@
 #include "Operation.hpp"
 
 #include <stdexcept>
+#include <ctime>
 
 Client::Client(sf::IpAddress serverAddress, std::uint16_t serverPort) :
     m_serverAddress(serverAddress),
@@ -13,7 +14,19 @@ Client::Client(sf::IpAddress serverAddress, std::uint16_t serverPort) :
 
 Client::~Client()
 {
-    disconnect();
+    if(m_connected) disconnect();
+}
+
+void Client::log(std::initializer_list<std::string> messages) const
+{
+    auto now = std::time(nullptr);
+    auto tm = std::localtime(&now);
+    std::cout << "[CLIENT][" << tm->tm_hour << ":" << tm->tm_min << ":" << tm->tm_sec << "] ";
+    for(std::string msg : messages)
+    {
+        std::cout << msg;
+    }
+    std::cout << std::endl;
 }
 
 void Client::run()
@@ -34,7 +47,7 @@ void Client::run()
         throw std::runtime_error("Attempted to read beyond the packet size.");
     }
 
-    std::cout << "[CLIENT] received op " << static_cast<int>(op) << std::endl;
+    log({"received op ", std::to_string(static_cast<int>(op)), " ", to_string(op)});
 
     switch(op)
     {
@@ -108,6 +121,8 @@ void Client::disconnect()
     {
         throw std::runtime_error("Error while disconnecting from server.");
     }
+
+    m_connected = false;
 }
 
 void Client::receiveMining(sf::Packet & packet)

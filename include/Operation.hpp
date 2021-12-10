@@ -4,6 +4,7 @@
 #include <SFML/Network/Packet.hpp>
 
 #include <cstdint>
+#include <string>
 
 enum class Operation : std::uint8_t
 {
@@ -20,5 +21,7 @@ enum class Operation : std::uint8_t
 
 sf::Packet& operator>>(sf::Packet& in, Operation& op);
 sf::Packet& operator<<(sf::Packet& out, const Operation& op);
+
+std::string to_string(Operation op);
 
 #endif // SRPF_OPERATION

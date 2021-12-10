@@ -14,6 +14,18 @@ Server::~Server()
 {
 }
 
+void Server::log(std::initializer_list<std::string> messages) const
+{
+    auto now = std::time(nullptr);
+    auto tm = std::localtime(&now);
+    std::cout << "[SERVER][" << tm->tm_hour << ":" << tm->tm_min << ":" << tm->tm_sec << "] ";
+    for(std::string msg : messages)
+    {
+        std::cout << msg;
+    }
+    std::cout << std::endl;
+}
+
 void Server::run()
 {
     sf::Packet packet;
@@ -32,7 +44,7 @@ void Server::run()
         throw std::runtime_error("Attempted to read beyond the packet size.");
     }
 
-    std::cout << "[SERVER] received op " << static_cast<int>(op) << std::endl;
+    log({"received op ", std::to_string(static_cast<int>(op)), " ", to_string(op)});
 
     switch(op)
     {

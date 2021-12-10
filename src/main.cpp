@@ -10,57 +10,110 @@
 
 int main(int argc, char** argv)
 {
-    try
-    {
+    std::uint16_t serverPort = 5643;
+    std::string serverIp = "localhost";
     
-    Server server(5643, 4);
+    std::uint32_t difficulty = 5;
+
+    bool doRunServer = true;
+    bool doRunClient = true;
+
     bool running = true;
 
-    sf::Thread thread_server([&](){
-        while(running)
+    std::unique_ptr<Server> server;
+    std::unique_ptr<sf::Thread> server_thread;
+
+    std::unique_ptr<Client> client;
+    std::unique_ptr<sf::Thread> client_thread;
+
+    if(doRunServer)
+    {
+        serverIp = "localhost";
+    }
+
+    try
+    {
+    if(doRunServer)
+    {
+        std::cout << "Starting Server on port " << serverPort << std::endl;
+
+        server = std::make_unique<Server>(serverPort, difficulty);
+
+        server_thread = std::make_unique<sf::Thread>([&]()
         {
-            try
+            while(running)
             {
-                server.run();
+                try
+                {
+                    server->run();
+                }
+                catch(std::exception& e)
+                {
+                    std::cerr << e.what() << '\n';
+                }
             }
-            catch(const std::exception& e)
+        });
+        server_thread->launch();
+    }
+
+    if(doRunClient)
+    {
+        std::cout << "Starting Client on server " << serverIp << ":" << serverPort << std::endl;
+
+        client = std::make_unique<Client>(sf::IpAddress(serverIp), serverPort);
+
+        client_thread = std::make_unique<sf::Thread>([&]()
+        {
+            while(running)
             {
-                std::cerr << e.what() << '\n';
+                try
+                {
+                    client->run();
+                }
+                catch(std::exception& e)
+                {
+                    std::cerr << e.what() << '\n';
+                }
+            }
+        });
+        client_thread->launch();
+
+        client->connect();
+    }
+
+    while(running)
+    {
+        std::string cmd;
+
+        std::cin >> cmd;
+
+        if(cmd == "transaction" || cmd == "tr")
+        {
+            std::string args;
+            std::getline(std::cin, args);
+        
+            client->sendTransaction(args);
+        }
+        else if(cmd == "stop")
+        {
+            running = false;
+            if(doRunClient)
+            {
+                client->disconnect();
+                client_thread->terminate();
+            }
+            if(doRunServer)
+            {
+                sf::sleep(sf::milliseconds(50));
+                server_thread->terminate();
             }
         }
-    });
-    thread_server.launch();
 
-    Client client(sf::IpAddress("localhost"), 5643);
-
-    sf::Thread thread_client([&](){
-        while(running)
-        {
-            try
-            {
-                client.run();
-            }
-            catch(const std::exception& e)
-            {
-                std::cerr << e.what() << '\n';
-            }
-        }
-    });
-    thread_client.launch();
-
-    client.connect();
-    client.sendTransaction("block 1");
-
-    client.sendTransaction("block 2");
-    client.sendTransaction("block 3");
-    client.sendTransaction("block 4");
-
-    sf::sleep(sf::seconds(2.f));
-
-    client.sendTransaction("block 5");
+        sf::sleep(sf::milliseconds(10));
+    }
 
     }
-    catch(const std::exception& e)
+    catch(std::exception& e)
     {
         std::cerr << e.what() << '\n';
     }

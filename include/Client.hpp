@@ -22,6 +22,8 @@ public:
     void connect();
     void disconnect();
 
+    void log(std::initializer_list<std::string> messages) const;
+
 private:
     sf::IpAddress m_serverAddress;
     std::uint16_t m_serverPort;
