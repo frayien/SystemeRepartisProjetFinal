@@ -21,7 +21,15 @@ void Client::log(std::initializer_list<std::string> messages) const
 {
     auto now = std::time(nullptr);
     auto tm = std::localtime(&now);
-    std::cout << "[CLIENT][" << tm->tm_hour << ":" << tm->tm_min << ":" << tm->tm_sec << "] ";
+    
+    std::cout << "[SERVER][";
+    if(tm->tm_hour < 10) std::cout << 0;
+    std::cout << tm->tm_hour << ":";
+    if(tm->tm_min < 10) std::cout << 0;
+    std::cout << tm->tm_min << ":";
+    if(tm->tm_sec < 10) std::cout << 0;
+    std::cout << tm->tm_sec << "] ";
+
     for(std::string msg : messages)
     {
         std::cout << msg;
@@ -131,6 +139,8 @@ void Client::receiveMining(sf::Packet & packet)
     std::uint32_t difficulty;
     packet >> difficulty >> block;
 
+    log({"Received block with content : '", block.sData, "'"});
+
     if(m_miningThread)
     {
         m_shouldMine = false;
@@ -160,7 +170,7 @@ void Client::mine(Block & block, std::uint32_t difficulty)
     }
     while (!block.sHash.starts_with(str) && m_shouldMine);
 
-    std::cout << "Block mined: " << block.sHash << std::endl;
+    log({"Block mined with hash : ", block.sHash});
 }
 
 void Client::sendBlock(const Block & block)

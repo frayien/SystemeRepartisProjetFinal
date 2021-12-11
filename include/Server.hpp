@@ -35,7 +35,7 @@ private:
     void disconnect(sf::IpAddress remoteAddress, std::uint16_t remotePort);
 
     void handleTransaction(sf::Packet & packet);
-    void createBlock(std::string data);
+    void createBlock();
 
     void sendBlockForValidation(const Block & block);
 

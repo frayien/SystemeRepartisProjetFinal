@@ -18,7 +18,15 @@ void Server::log(std::initializer_list<std::string> messages) const
 {
     auto now = std::time(nullptr);
     auto tm = std::localtime(&now);
-    std::cout << "[SERVER][" << tm->tm_hour << ":" << tm->tm_min << ":" << tm->tm_sec << "] ";
+    
+    std::cout << "[SERVER][";
+    if(tm->tm_hour < 10) std::cout << 0;
+    std::cout << tm->tm_hour << ":";
+    if(tm->tm_min < 10) std::cout << 0;
+    std::cout << tm->tm_min << ":";
+    if(tm->tm_sec < 10) std::cout << 0;
+    std::cout << tm->tm_sec << "] ";
+
     for(std::string msg : messages)
     {
         std::cout << msg;
@@ -109,15 +117,19 @@ void Server::handleTransaction(sf::Packet & packet)
 
     m_nextBlockData += transaction;
 
-    if(!m_currentlyMining) createBlock(transaction);
+    if(!m_currentlyMining) createBlock();
 }
 
-void Server::createBlock(std::string data)
+void Server::createBlock()
 {
+    if(m_nextBlockData.empty()) return;
+
     m_currentlyMining = true;
 
-    auto previousIndex = m_blockchain.GetLastBlock().nIndex;
-    Block block(data);
+    log({"Creating block with content : '", m_nextBlockData, "'"});
+
+    Block block(m_nextBlockData);
+    m_nextBlockData.clear();
 
     m_blockchain.prepareBlock(block);
 
@@ -156,9 +168,7 @@ void Server::handleValidBlock(sf::Packet & packet)
     
     if(!m_nextBlockData.empty())
     {
-        std::string data = m_nextBlockData;
-        m_nextBlockData.clear();
-        createBlock(data);
+        createBlock();
     }
     else
     {
