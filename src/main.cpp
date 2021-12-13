@@ -88,9 +88,14 @@ int main(int argc, char** argv)
         std::cin >> cmd;
 
         if(doRunClient && (cmd == "transaction" || cmd == "tr"))
-        {
+        {   
             std::string args;
             std::getline(std::cin, args);
+
+            while(std::isspace(args[0])) // trim
+            {
+                args = args.substr(1);
+            }
 
             client->log({"Send Transaction '", args, "'"});
             client->sendTransaction(args);
