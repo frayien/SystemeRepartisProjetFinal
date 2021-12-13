@@ -30,6 +30,7 @@ private:
     Blockchain m_blockchain;
 
     bool m_currentlyMining = false;
+    bool m_currentlyEnsuringCorrectness = false;
     Block m_currentlyMinedBlock;
     std::string m_nextBlockData;
 

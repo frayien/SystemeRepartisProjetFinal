@@ -52,7 +52,7 @@ void Server::run()
         throw std::runtime_error("Attempted to read beyond the packet size.");
     }
 
-    log({"received op ", std::to_string(static_cast<int>(op)), " ", to_string(op)});
+    log({"received op ", std::to_string(static_cast<int>(op)), " : ", to_string(op)});
 
     switch(op)
     {
@@ -78,7 +78,7 @@ void Server::run()
         break;
     }
 
-    if(!m_nonce_confirmation_waited_for_clients.empty() && m_nonce_confirmation_timer.getElapsedTime() > NONCE_CONFIRMATION_TIMEOUT)
+    if(m_currentlyEnsuringCorrectness && m_nonce_confirmation_timer.getElapsedTime() > NONCE_CONFIRMATION_TIMEOUT)
     {
         endMining();
     }
@@ -108,6 +108,7 @@ void Server::sendError(sf::IpAddress remoteAddress, std::uint16_t remotePort, st
 
 void Server::connect(sf::IpAddress remoteAddress, std::uint16_t remotePort)
 {
+    log({"New Client : ", remoteAddress.toString(), ":", std::to_string(remotePort)});
     m_clients.push_front({remoteAddress, remotePort});
     sendOk(remoteAddress, remotePort);
 }
@@ -164,6 +165,7 @@ void Server::sendBlockForValidation()
 void Server::handleFoundNonce(sf::Packet & packet)
 {
     if(!m_currentlyMining) throw std::runtime_error("Error no block is currently mined.");
+    if(m_currentlyEnsuringCorrectness) throw std::runtime_error("Error nonce alredy found.");
 
     std::uint32_t index;
     std::int64_t nonce;
@@ -171,6 +173,8 @@ void Server::handleFoundNonce(sf::Packet & packet)
     packet >> index >> nonce;
 
     if(m_currentlyMinedBlock.nIndex != index) throw std::runtime_error("Error received wrong block.");
+
+    m_currentlyEnsuringCorrectness = true;
 
     m_currentlyMinedBlock.nNonce = nonce;
 
@@ -208,6 +212,7 @@ void Server::handleConfirmCorrectness(sf::Packet & packet, sf::IpAddress remoteA
     if(!isValid)
     {
         m_nonce_confirmation_waited_for_clients.clear();
+        m_currentlyEnsuringCorrectness = false;
         sendBlockForValidation();
         return;
     }
@@ -223,6 +228,7 @@ void Server::handleConfirmCorrectness(sf::Packet & packet, sf::IpAddress remoteA
 void Server::endMining()
 {
     m_nonce_confirmation_waited_for_clients.clear();
+    m_currentlyEnsuringCorrectness = false;
 
     m_currentlyMinedBlock.sHash = m_currentlyMinedBlock.CalculateHash();
     m_blockchain.AddBlock(m_currentlyMinedBlock);

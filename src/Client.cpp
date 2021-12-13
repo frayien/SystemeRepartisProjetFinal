@@ -22,7 +22,7 @@ void Client::log(std::initializer_list<std::string> messages) const
     auto now = std::time(nullptr);
     auto tm = std::localtime(&now);
     
-    std::cout << "[SERVER][";
+    std::cout << "[CLIENT][";
     if(tm->tm_hour < 10) std::cout << 0;
     std::cout << tm->tm_hour << ":";
     if(tm->tm_min < 10) std::cout << 0;
@@ -55,7 +55,7 @@ void Client::run()
         throw std::runtime_error("Attempted to read beyond the packet size.");
     }
 
-    log({"received op ", std::to_string(static_cast<int>(op)), " ", to_string(op)});
+    log({"received op ", std::to_string(static_cast<int>(op)), " : ", to_string(op)});
 
     switch(op)
     {
