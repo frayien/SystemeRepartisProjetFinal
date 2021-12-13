@@ -17,15 +17,17 @@ std::string to_string(Operation op)
 {
     switch (op)
     {
-    case Operation::NO_OP:              return "No Operation";
-    case Operation::CONNECT:            return "Connection";
-    case Operation::DISCONNECT:         return "Disconnection";
-    case Operation::TRANSACTION:        return "Transaction";
-    case Operation::REQUEST_VALIDATION: return "Request Validation";
-    case Operation::VALID_BLOCK:        return "Return Valid Block";
-    case Operation::END_MINING:         return "End Mining";
-    case Operation::OK:                 return "Ok";
-    case Operation::ERROR:              return "Error";
-    default:                            return "Unknown Operation";
+    case Operation::NO_OP:               return "No Operation";
+    case Operation::CONNECT:             return "Connection";
+    case Operation::DISCONNECT:          return "Disconnection";
+    case Operation::TRANSACTION:         return "Transaction";
+    case Operation::REQUEST_VALIDATION:  return "Request Validation";
+    case Operation::FOUND_NONCE:         return "Found Nonce";
+    case Operation::ENSURE_CORRECTNESS:  return "Ensure Correctness";
+    case Operation::CONFIRM_CORRECTNESS: return "Confirm Correctness";
+    case Operation::END_MINING:          return "End Mining";
+    case Operation::OK:                  return "Ok";
+    case Operation::ERROR:               return "Error";
+    default:                             return "Unknown Operation";
     }
 }

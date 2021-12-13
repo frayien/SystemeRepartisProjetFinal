@@ -40,7 +40,10 @@ private:
     void receiveMining(sf::Packet & packet);
     void mine(Block & block, std::uint32_t difficulty);
 
-    void sendBlock(const Block & block);
+    void sendNonce(const Block & block);
+
+    void ensureCorrectness(sf::Packet & packet);
+    void sendConfirmCorrectness(const Block & block, bool isValid);
 };
 
 #endif // SRPF_CLIENT

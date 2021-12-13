@@ -70,6 +70,9 @@ void Client::run()
     case Operation::REQUEST_VALIDATION:
         receiveMining(packet);
         break;
+    case Operation::ENSURE_CORRECTNESS:
+        ensureCorrectness(packet);
+        break;
     case Operation::END_MINING:
         m_shouldMine = false;
         break;
@@ -153,7 +156,7 @@ void Client::receiveMining(sf::Packet & packet)
         Block l_block = block;
         mine(l_block, difficulty);
 
-        if(m_shouldMine) sendBlock(l_block);
+        if(m_shouldMine) sendNonce(l_block);
     });
 
     m_miningThread->launch();
@@ -161,27 +164,54 @@ void Client::receiveMining(sf::Packet & packet)
 
 void Client::mine(Block & block, std::uint32_t difficulty)
 {
-    std::string str(difficulty, '0');
+    std::string prefix_str(difficulty, '0');
 
     do
     {
         block.nNonce++;
         block.sHash = block.CalculateHash();
     }
-    while (!block.sHash.starts_with(str) && m_shouldMine);
+    while (!block.sHash.starts_with(prefix_str) && m_shouldMine);
 
     log({"Block mined with hash : ", block.sHash});
 }
 
-void Client::sendBlock(const Block & block)
+void Client::sendNonce(const Block & block)
 {
     sf::Packet packet;
-    packet << Operation::VALID_BLOCK;
-    packet << block;
+    packet << Operation::FOUND_NONCE;
+    packet << block.nIndex;
+    packet << block.nNonce;
 
     if(m_socket.send(packet, m_serverAddress, m_serverPort) != sf::Socket::Done)
     {
         throw std::runtime_error("Error while sending a valid block.");
     }
-    
+}
+
+void Client::ensureCorrectness(sf::Packet & packet)
+{
+    Block block;
+    std::uint32_t difficulty;
+    packet >> difficulty >> block;
+
+    log({"Received block to ensure correctness with nonce : '", std::to_string(block.nNonce), "'"});
+
+    std::string prefix_str(difficulty, '0');
+    bool isValid = block.CalculateHash().starts_with(prefix_str);
+
+    sendConfirmCorrectness(block, isValid);
+}
+
+void Client::sendConfirmCorrectness(const Block & block, bool isValid)
+{
+    sf::Packet packet;
+    packet << Operation::CONFIRM_CORRECTNESS;
+    packet << block.nIndex;
+    packet << isValid;
+
+    if(m_socket.send(packet, m_serverAddress, m_serverPort) != sf::Socket::Done)
+    {
+        throw std::runtime_error("Error while sending corectness confirmation.");
+    }
 }

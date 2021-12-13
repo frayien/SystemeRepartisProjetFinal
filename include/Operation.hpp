@@ -13,8 +13,10 @@ enum class Operation : std::uint8_t
     DISCONNECT = 2,
     TRANSACTION = 3,
     REQUEST_VALIDATION = 4,
-    VALID_BLOCK = 5,
-    END_MINING = 6,
+    FOUND_NONCE = 5,
+    ENSURE_CORRECTNESS = 6,
+    CONFIRM_CORRECTNESS = 7,
+    END_MINING = 8,
     OK = 10,
     ERROR = 11,
 };

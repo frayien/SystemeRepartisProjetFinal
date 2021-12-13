@@ -67,12 +67,20 @@ void Server::run()
     case Operation::TRANSACTION:
         handleTransaction(packet);
         break;
-    case Operation::VALID_BLOCK:
-        handleValidBlock(packet);
+    case Operation::FOUND_NONCE:
+        handleFoundNonce(packet);
+        break;
+    case Operation::CONFIRM_CORRECTNESS:
+        handleConfirmCorrectness(packet, remoteAddress, remotePort);
         break;
     default:
         throw std::runtime_error("Unsupported operation.");
         break;
+    }
+
+    if(!m_nonce_confirmation_waited_for_clients.empty() && m_nonce_confirmation_timer.getElapsedTime() > NONCE_CONFIRMATION_TIMEOUT)
+    {
+        endMining();
     }
 }
 
@@ -107,6 +115,7 @@ void Server::connect(sf::IpAddress remoteAddress, std::uint16_t remotePort)
 void Server::disconnect(sf::IpAddress remoteAddress, std::uint16_t remotePort)
 {
     m_clients.remove({remoteAddress, remotePort});
+    m_nonce_confirmation_waited_for_clients.remove({remoteAddress, remotePort});
     sendOk(remoteAddress, remotePort);
 }
 
@@ -128,20 +137,20 @@ void Server::createBlock()
 
     log({"Creating block with content : '", m_nextBlockData, "'"});
 
-    Block block(m_nextBlockData);
+    m_currentlyMinedBlock = Block(m_nextBlockData);
     m_nextBlockData.clear();
 
-    m_blockchain.prepareBlock(block);
+    m_blockchain.prepareBlock(m_currentlyMinedBlock);
 
-    sendBlockForValidation(block);
+    sendBlockForValidation();
 }
 
-void Server::sendBlockForValidation(const Block & block)
+void Server::sendBlockForValidation()
 {
     sf::Packet packet;
     packet << Operation::REQUEST_VALIDATION;
     packet << m_blockchain.getDifficulty();
-    packet << block;
+    packet << m_currentlyMinedBlock;
 
     for(const auto & [ipaddr, port] : m_clients)
     {
@@ -152,18 +161,71 @@ void Server::sendBlockForValidation(const Block & block)
     }
 }
 
-void Server::handleValidBlock(sf::Packet & packet)
+void Server::handleFoundNonce(sf::Packet & packet)
 {
-    Block block;
-    packet >> block;
+    if(!m_currentlyMining) throw std::runtime_error("Error no block is currently mined.");
 
-    m_blockchain.prepareBlock(block);
+    std::uint32_t index;
+    std::int64_t nonce;
 
-    if(block.CalculateHash() != block.sHash)
+    packet >> index >> nonce;
+
+    if(m_currentlyMinedBlock.nIndex != index) throw std::runtime_error("Error received wrong block.");
+
+    m_currentlyMinedBlock.nNonce = nonce;
+
+    sendEnsureCorrectness();
+}
+
+void Server::sendEnsureCorrectness()
+{
+    sf::Packet packet;
+    packet << Operation::ENSURE_CORRECTNESS;
+    packet << m_blockchain.getDifficulty();
+    packet << m_currentlyMinedBlock;
+    
+    m_nonce_confirmation_waited_for_clients.clear();
+    m_nonce_confirmation_timer.restart();
+
+    for(const auto & [ipaddr, port] : m_clients)
+    {
+        if(m_socket.send(packet, ipaddr, port) != sf::Socket::Done)
+        {
+            throw std::runtime_error("Error while sending a block for validation.");
+        }
+        m_nonce_confirmation_waited_for_clients.push_front({ipaddr, port});
+    }
+}
+
+void Server::handleConfirmCorrectness(sf::Packet & packet, sf::IpAddress remoteAddress, std::uint16_t remotePort)
+{
+    std::uint32_t index;
+    bool isValid;
+    packet >> index >> isValid;
+
+    if(m_currentlyMinedBlock.nIndex != index) throw std::runtime_error("Error received wrong block.");
+
+    if(!isValid)
+    {
+        m_nonce_confirmation_waited_for_clients.clear();
+        sendBlockForValidation();
         return;
+    }
 
-    m_blockchain.AddBlock(block);
+    m_nonce_confirmation_waited_for_clients.remove({remoteAddress, remotePort});
 
+    if(m_nonce_confirmation_waited_for_clients.empty() || m_nonce_confirmation_timer.getElapsedTime() > NONCE_CONFIRMATION_TIMEOUT)
+    {
+        endMining();
+    }
+}
+
+void Server::endMining()
+{
+    m_nonce_confirmation_waited_for_clients.clear();
+
+    m_currentlyMinedBlock.sHash = m_currentlyMinedBlock.CalculateHash();
+    m_blockchain.AddBlock(m_currentlyMinedBlock);
     sendEndMining();
     
     if(!m_nextBlockData.empty())
