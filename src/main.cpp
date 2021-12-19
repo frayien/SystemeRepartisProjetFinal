@@ -16,15 +16,20 @@ int main(int argc, char** argv)
     std::uint32_t difficulty = 5;
 
     bool doRunServer = true;
-    bool doRunClient = true;
+    std::size_t client_n = 1;
 
     bool running = true;
 
     std::unique_ptr<Server> server;
     std::unique_ptr<sf::Thread> server_thread;
 
-    std::unique_ptr<Client> client;
-    std::unique_ptr<sf::Thread> client_thread;
+    struct ClientRunnable
+    {
+        std::unique_ptr<Client> client;
+        std::unique_ptr<sf::Thread> client_thread;
+    };
+
+    std::vector<ClientRunnable> clients;
 
     if(doRunServer)
     {
@@ -56,13 +61,15 @@ int main(int argc, char** argv)
         server_thread->launch();
     }
 
-    if(doRunClient)
+    for(std::size_t i = 0; i < client_n; ++i)
     {
-        std::cout << "Starting Client on server " << serverIp << ":" << serverPort << std::endl;
+        std::cout << "Starting Client " << i << " on server " << serverIp << ":" << serverPort << std::endl;
 
-        client = std::make_unique<Client>(sf::IpAddress(serverIp), serverPort);
+        auto& client = clients.emplace_back();
 
-        client_thread = std::make_unique<sf::Thread>([&]()
+        client.client = std::make_unique<Client>(sf::IpAddress(serverIp), serverPort, i);
+
+        client.client_thread = std::make_unique<sf::Thread>([&client = client.client, &running, i]()
         {
             while(running)
             {
@@ -72,13 +79,13 @@ int main(int argc, char** argv)
                 }
                 catch(std::exception& e)
                 {
-                    std::cerr << e.what() << '\n';
+                    std::cerr << "[ERROR][CLIENT-" << i << "] " << e.what() << '\n';
                 }
             }
         });
-        client_thread->launch();
+        client.client_thread->launch();
 
-        client->connect();
+        client.client->connect();
     }
 
     while(running)
@@ -87,7 +94,7 @@ int main(int argc, char** argv)
 
         std::cin >> cmd;
 
-        if(doRunClient && (cmd == "transaction" || cmd == "tr"))
+        if(client_n > 0 && (cmd == "transaction" || cmd == "tr"))
         {   
             std::string args;
             std::getline(std::cin, args);
@@ -97,16 +104,19 @@ int main(int argc, char** argv)
                 args = args.substr(1);
             }
 
-            client->log({"Send Transaction '", args, "'"});
-            client->sendTransaction(args);
+            clients[0].client->log({"Send Transaction '", args, "'"});
+            clients[0].client->sendTransaction(args);
         }
         else if(cmd == "stop")
         {
             running = false;
-            if(doRunClient)
+            if(client_n > 0)
             {
-                client->disconnect();
-                client_thread->terminate();
+                for(auto& cli : clients)
+                {
+                    cli.client->disconnect();
+                    cli.client_thread->terminate();
+                }
             }
             if(doRunServer)
             {

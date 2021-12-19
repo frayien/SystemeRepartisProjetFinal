@@ -3,6 +3,7 @@
 #include "Operation.hpp"
 
 #include <stdexcept>
+#include <sstream>
 
 Server::Server(std::uint16_t port, std::uint32_t difficulty) :
     m_blockchain(difficulty)
@@ -18,20 +19,23 @@ void Server::log(std::initializer_list<std::string> messages) const
 {
     auto now = std::time(nullptr);
     auto tm = std::localtime(&now);
+
+    std::stringstream sstream;
     
-    std::cout << "[SERVER][";
-    if(tm->tm_hour < 10) std::cout << 0;
-    std::cout << tm->tm_hour << ":";
-    if(tm->tm_min < 10) std::cout << 0;
-    std::cout << tm->tm_min << ":";
-    if(tm->tm_sec < 10) std::cout << 0;
-    std::cout << tm->tm_sec << "] ";
+    sstream << "[SERVER][";
+    if(tm->tm_hour < 10) sstream << 0;
+    sstream << tm->tm_hour << ":";
+    if(tm->tm_min < 10) sstream << 0;
+    sstream << tm->tm_min << ":";
+    if(tm->tm_sec < 10) sstream << 0;
+    sstream << tm->tm_sec << "] ";
 
     for(std::string msg : messages)
     {
-        std::cout << msg;
+        sstream << msg;
     }
-    std::cout << std::endl;
+    sstream << std::endl;
+    std::cout << sstream.str();
 }
 
 void Server::run()

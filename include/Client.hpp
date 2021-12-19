@@ -12,7 +12,7 @@
 class Client
 {  
 public:
-    Client(sf::IpAddress serverAddress, std::uint16_t serverPort);
+    Client(sf::IpAddress serverAddress, std::uint16_t serverPort, std::size_t id);
     ~Client();
 
     void run();
@@ -27,6 +27,7 @@ public:
 private:
     sf::IpAddress m_serverAddress;
     std::uint16_t m_serverPort;
+    std::size_t m_id;
 
     sf::UdpSocket m_socket;
 

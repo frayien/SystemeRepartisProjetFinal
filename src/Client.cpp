@@ -4,10 +4,12 @@
 
 #include <stdexcept>
 #include <ctime>
+#include <sstream>
 
-Client::Client(sf::IpAddress serverAddress, std::uint16_t serverPort) :
+Client::Client(sf::IpAddress serverAddress, std::uint16_t serverPort, std::size_t id) :
     m_serverAddress(serverAddress),
-    m_serverPort(serverPort)
+    m_serverPort(serverPort),
+    m_id(id)
 {
     m_socket.bind(sf::Socket::AnyPort);
 }
@@ -21,20 +23,23 @@ void Client::log(std::initializer_list<std::string> messages) const
 {
     auto now = std::time(nullptr);
     auto tm = std::localtime(&now);
+
+    std::stringstream sstream;
     
-    std::cout << "[CLIENT][";
-    if(tm->tm_hour < 10) std::cout << 0;
-    std::cout << tm->tm_hour << ":";
-    if(tm->tm_min < 10) std::cout << 0;
-    std::cout << tm->tm_min << ":";
-    if(tm->tm_sec < 10) std::cout << 0;
-    std::cout << tm->tm_sec << "] ";
+    sstream << "[CLIENT-" << m_id << "][";
+    if(tm->tm_hour < 10) sstream << 0;
+    sstream << tm->tm_hour << ":";
+    if(tm->tm_min < 10) sstream << 0;
+    sstream << tm->tm_min << ":";
+    if(tm->tm_sec < 10) sstream << 0;
+    sstream << tm->tm_sec << "] ";
 
     for(std::string msg : messages)
     {
-        std::cout << msg;
+        sstream << msg;
     }
-    std::cout << std::endl;
+    sstream << std::endl;
+    std::cout << sstream.str();
 }
 
 void Client::run()
@@ -44,9 +49,10 @@ void Client::run()
     std::uint16_t remotePort;
 
     // block until we receive a packet
-    if(m_socket.receive(packet, remoteAddress, remotePort) != sf::Socket::Done)
+    sf::Socket::Status status;
+    if((status = m_socket.receive(packet, remoteAddress, remotePort)) != sf::Socket::Done)
     {
-        throw std::runtime_error("Error while receiving a packet.");
+        throw std::runtime_error("Error while receiving a packet : " + std::to_string(status));
     }
 
     Operation op;
