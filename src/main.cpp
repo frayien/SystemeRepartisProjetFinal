@@ -30,16 +30,16 @@ std::string random_string(std::size_t size)
 
 int main(int argc, char** argv)
 {
-    std::uint16_t serverPort = 5643;
-    std::string serverIp = "localhost";
+    const std::uint16_t serverPort = 5643;
+    const std::string serverIp = "localhost";
     
-    std::uint32_t difficulty = 5;
-    Server::Mode mode = Server::Mode::PoS;
+    const std::uint32_t difficulty = 4;
+    const Server::Mode mode = Server::Mode::PoS;
 
-    bool doRunServer = true;
-    std::size_t client_n = 10;
+    const bool doRunServer = true;
+    const std::size_t client_n = 10;
 
-    bool benchmark_mode = true;
+    const bool benchmark_mode = true;
 
     bool running = true;
 
@@ -58,8 +58,8 @@ int main(int argc, char** argv)
     sf::Clock benchmark_clock_glob;
     std::atomic_int64_t total_nonce = 0;
     std::atomic_int64_t total_nonce_1block = 0;
-    std::size_t benchmark_string_size = 20;
-    std::size_t benchmark_block_n = 10;
+    const std::size_t benchmark_string_size = 10;
+    const std::size_t benchmark_block_n = 1000;
 
 
     std::ofstream benchmark_output;
@@ -75,12 +75,6 @@ int main(int argc, char** argv)
         benchmark_output.open(benchmark_output_path);
         if(!benchmark_output) std::cerr << "Could not open " << benchmark_output_path << std::endl;
         benchmark_output << "Block id;Hash;Time (ms);Hash cumul; Time (ms) cumul\n";
-    }
-
-
-    if(doRunServer)
-    {
-        serverIp = "localhost";
     }
 
     try
@@ -141,9 +135,8 @@ int main(int argc, char** argv)
         {
             if(op == Operation::REQUEST_VALIDATION)
             {
-                if(benchmark_block_n > 0)
+                if(i < benchmark_block_n)
                 {
-                    --benchmark_block_n;
                     clients[0].client->sendTransaction(random_string(benchmark_string_size));
                 }
                 benchmark_clock.restart();
@@ -212,7 +205,7 @@ int main(int argc, char** argv)
             benchmark_clock.restart();
             benchmark_clock_glob.restart();
             total_nonce = 0;
-            benchmark_block_n = 10;
+            total_nonce_1block = 0;
 
             clients[0].client->sendTransaction(random_string(benchmark_string_size));
         }
