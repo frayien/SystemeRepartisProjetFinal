@@ -4,9 +4,11 @@
 
 #include <stdexcept>
 #include <sstream>
+#include <random>
 
-Server::Server(std::uint16_t port, std::uint32_t difficulty) :
-    m_blockchain(difficulty)
+Server::Server(std::uint16_t port, std::uint32_t difficulty, Mode mode) :
+    m_blockchain(difficulty),
+    m_mode(mode)
 {
     m_socket.bind(port);
 }
@@ -157,13 +159,34 @@ void Server::sendBlockForValidation()
     packet << m_blockchain.getDifficulty();
     packet << m_currentlyMinedBlock;
 
-    for(const auto & [ipaddr, port] : m_clients)
+    if (m_mode == Mode::PoW)
     {
+        for(const auto& [ipaddr, port] : m_clients)
+        {
+            if(m_socket.send(packet, ipaddr, port) != sf::Socket::Done)
+            {
+                throw std::runtime_error("Error while sending a block for validation.");
+            }
+        }
+    }
+    else if (m_mode == Mode::PoS)
+    {
+        std::random_device rd;
+        std::mt19937 mt(rd());
+        
+        std::uniform_int_distribution dist(0ull, m_clients.size()-1);
+
+        std::size_t random_i = dist(mt);
+        auto it = m_clients.begin();
+        std::advance(it, random_i);
+        auto & [ipaddr, port] = *it;
+
         if(m_socket.send(packet, ipaddr, port) != sf::Socket::Done)
         {
             throw std::runtime_error("Error while sending a block for validation.");
         }
     }
+
 }
 
 void Server::handleFoundNonce(sf::Packet & packet)
@@ -178,11 +201,19 @@ void Server::handleFoundNonce(sf::Packet & packet)
 
     if(m_currentlyMinedBlock.nIndex != index) throw std::runtime_error("Error received wrong block.");
 
-    m_currentlyEnsuringCorrectness = true;
-
     m_currentlyMinedBlock.nNonce = nonce;
 
+    if(m_mode == Mode::PoW)
+    {
+        m_currentlyEnsuringCorrectness = true;
+    }
+
     sendEnsureCorrectness();
+
+    if(m_mode == Mode::PoS)
+    {
+        endMining();
+    }
 }
 
 void Server::sendEnsureCorrectness()
@@ -201,7 +232,7 @@ void Server::sendEnsureCorrectness()
         {
             throw std::runtime_error("Error while sending a block for validation.");
         }
-        m_nonce_confirmation_waited_for_clients.push_front({ipaddr, port});
+         if(m_mode == Mode::PoW) m_nonce_confirmation_waited_for_clients.push_front({ipaddr, port});
     }
 }
 
@@ -211,9 +242,9 @@ void Server::handleConfirmCorrectness(sf::Packet & packet, sf::IpAddress remoteA
     bool isValid;
     packet >> index >> isValid;
 
-    if(m_currentlyMinedBlock.nIndex != index) throw std::runtime_error("Error received wrong block.");
+    if(m_mode == Mode::PoW && m_currentlyMinedBlock.nIndex != index) throw std::runtime_error("Error received wrong block.");
 
-    if(!isValid)
+    if(!isValid && m_mode == Mode::PoW)
     {
         m_nonce_confirmation_waited_for_clients.clear();
         m_currentlyEnsuringCorrectness = false;
@@ -221,11 +252,24 @@ void Server::handleConfirmCorrectness(sf::Packet & packet, sf::IpAddress remoteA
         return;
     }
 
-    m_nonce_confirmation_waited_for_clients.remove({remoteAddress, remotePort});
-
-    if(m_nonce_confirmation_waited_for_clients.empty() || m_nonce_confirmation_timer.getElapsedTime() > NONCE_CONFIRMATION_TIMEOUT)
+    if(!isValid && m_mode == Mode::PoS)
     {
-        endMining();
+        while(m_blockchain.GetLastBlock().nIndex >= index)
+        {
+            m_currentlyMinedBlock = m_blockchain.popLastBlock();
+        }
+        if(m_currentlyMinedBlock.nIndex == index) sendBlockForValidation();
+        return;
+    }
+
+    if(m_mode == Mode::PoW)
+    {
+        m_nonce_confirmation_waited_for_clients.remove({remoteAddress, remotePort});
+
+        if(m_nonce_confirmation_waited_for_clients.empty() || m_nonce_confirmation_timer.getElapsedTime() > NONCE_CONFIRMATION_TIMEOUT)
+        {
+            endMining();
+        }
     }
 }
 

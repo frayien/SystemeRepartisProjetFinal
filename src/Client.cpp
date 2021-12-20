@@ -49,10 +49,9 @@ void Client::run()
     std::uint16_t remotePort;
 
     // block until we receive a packet
-    sf::Socket::Status status;
-    if((status = m_socket.receive(packet, remoteAddress, remotePort)) != sf::Socket::Done)
+    if(m_socket.receive(packet, remoteAddress, remotePort) != sf::Socket::Done)
     {
-        throw std::runtime_error("Error while receiving a packet : " + std::to_string(status));
+        throw std::runtime_error("Error while receiving a packet");
     }
 
     Operation op;

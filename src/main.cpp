@@ -14,9 +14,10 @@ int main(int argc, char** argv)
     std::string serverIp = "localhost";
     
     std::uint32_t difficulty = 5;
+    Server::Mode mode = Server::Mode::PoW;
 
     bool doRunServer = true;
-    std::size_t client_n = 1;
+    std::size_t client_n = 10;
 
     bool running = true;
 
@@ -42,7 +43,7 @@ int main(int argc, char** argv)
     {
         std::cout << "Starting Server on port " << serverPort << std::endl;
 
-        server = std::make_unique<Server>(serverPort, difficulty);
+        server = std::make_unique<Server>(serverPort, difficulty, mode);
 
         server_thread = std::make_unique<sf::Thread>([&]()
         {
@@ -69,13 +70,13 @@ int main(int argc, char** argv)
 
         client.client = std::make_unique<Client>(sf::IpAddress(serverIp), serverPort, i);
 
-        client.client_thread = std::make_unique<sf::Thread>([&client = client.client, &running, i]()
+        client.client_thread = std::make_unique<sf::Thread>([&clients, &running, i]()
         {
             while(running)
             {
                 try
                 {
-                    client->run();
+                    clients[i].client->run();
                 }
                 catch(std::exception& e)
                 {

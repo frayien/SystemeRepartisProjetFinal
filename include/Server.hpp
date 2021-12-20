@@ -3,7 +3,7 @@
 
 #include <SFML/Network.hpp>
 
-#include <forward_list>
+#include <list>
 #include <cstdint>
 #include <utility>
 
@@ -12,7 +12,14 @@
 class Server
 {
 public:
-    Server(std::uint16_t port, std::uint32_t difficulty);
+    enum class Mode
+    {
+        PoW,
+        PoS,
+    };
+
+public:
+    Server(std::uint16_t port, std::uint32_t difficulty, Mode mode);
     ~Server();
 
     void log(std::initializer_list<std::string> messages) const;
@@ -20,12 +27,14 @@ public:
     void run();
     
 private:
+    Mode m_mode;
+
     sf::UdpSocket m_socket;
-    std::forward_list<std::pair<sf::IpAddress, std::uint16_t> > m_clients;
+    std::list<std::pair<sf::IpAddress, std::uint16_t> > m_clients;
 
     const sf::Time NONCE_CONFIRMATION_TIMEOUT = sf::seconds(5.f);
     sf::Clock m_nonce_confirmation_timer;
-    std::forward_list<std::pair<sf::IpAddress, std::uint16_t> > m_nonce_confirmation_waited_for_clients;
+    std::list<std::pair<sf::IpAddress, std::uint16_t> > m_nonce_confirmation_waited_for_clients;
 
     Blockchain m_blockchain;
 

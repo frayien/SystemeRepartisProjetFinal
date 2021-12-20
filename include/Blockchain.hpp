@@ -17,6 +17,7 @@ public:
     void AddBlock(Block bNew);
 
     Block GetLastBlock() const;
+    Block popLastBlock();
 
     inline std::uint32_t getDifficulty() { return _nDifficulty; }
 

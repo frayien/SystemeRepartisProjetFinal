@@ -27,3 +27,10 @@ Block Blockchain::GetLastBlock() const
 {
     return _vChain.back();
 }
+
+Block Blockchain::popLastBlock()
+{
+    Block last = _vChain.back();
+    _vChain.pop_back();
+    return last;
+}
