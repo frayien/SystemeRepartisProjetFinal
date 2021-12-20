@@ -2,6 +2,8 @@
 #include <atomic>
 #include <array>
 #include <random>
+#include <fstream>
+#include <filesystem>
 
 #include <SFML/Network.hpp>
 #include <SFML/System/Thread.hpp>
@@ -55,9 +57,26 @@ int main(int argc, char** argv)
     sf::Clock benchmark_clock;
     sf::Clock benchmark_clock_glob;
     std::atomic_int64_t total_nonce = 0;
-    std::uint32_t prev_block_id = 0;
+    std::atomic_int64_t total_nonce_1block = 0;
     std::size_t benchmark_string_size = 20;
     std::size_t benchmark_block_n = 10;
+
+
+    std::ofstream benchmark_output;
+
+    if(benchmark_mode)
+    {
+        std::filesystem::path benchmark_output_path("benchmark.csv");
+
+        for(std::size_t i = 1; std::filesystem::exists(benchmark_output_path); ++i)
+        {
+            benchmark_output_path.replace_filename("benchmark (" + std::to_string(i) + ").csv");
+        }
+        benchmark_output.open(benchmark_output_path);
+        if(!benchmark_output) std::cerr << "Could not open " << benchmark_output_path << std::endl;
+        benchmark_output << "Block id;Hash;Time (ms);Hash cumul; Time (ms) cumul\n";
+    }
+
 
     if(doRunServer)
     {
@@ -118,7 +137,7 @@ int main(int argc, char** argv)
     
     if(benchmark_mode)
     {
-        server->setCallback([&prev_block_id, &benchmark_clock, &benchmark_clock_glob, &benchmark_block_n, &clients, &benchmark_string_size, &total_nonce](Operation op, std::size_t i)
+        server->setCallback([&benchmark_output, &benchmark_clock, &benchmark_clock_glob, &benchmark_block_n, &clients, &benchmark_string_size, &total_nonce, &total_nonce_1block](Operation op, std::size_t i)
         {
             if(op == Operation::REQUEST_VALIDATION)
             {
@@ -127,22 +146,27 @@ int main(int argc, char** argv)
                     --benchmark_block_n;
                     clients[0].client->sendTransaction(random_string(benchmark_string_size));
                 }
-                prev_block_id = i;
                 benchmark_clock.restart();
+                total_nonce_1block = 0;
             }
-            if(op == Operation::END_MINING && prev_block_id == i)
+            if(op == Operation::END_MINING)
             {
-                std::cout << "[BENCHMARK] MINED BLOCK " << prev_block_id << " IN " << benchmark_clock.getElapsedTime().asMilliseconds() << " MS" << std::endl;
-                std::cout << "[BENCHMARK] TOTAL TIME " << benchmark_clock_glob.getElapsedTime().asMilliseconds() << " MS" << std::endl;
+                sf::Int32 current_block_time = benchmark_clock.getElapsedTime().asMilliseconds();
+                sf::Int32 global_time = benchmark_clock_glob.getElapsedTime().asMilliseconds();
+                std::cout << "[BENCHMARK] MINED BLOCK " << i << " IN " << current_block_time << " MS" << std::endl;
+                std::cout << "[BENCHMARK] TOTAL TIME " << global_time << " MS" << std::endl;
                 std::cout << "[BENCHMARK] TOTAL HASH " << total_nonce << std::endl;
+                benchmark_output << i << ";" << total_nonce_1block << ";" << current_block_time << ";" << total_nonce << ";" << global_time << "\n";
+                benchmark_output.flush();
             }
         });
 
         for(auto& [cli, thead] : clients)
         {
-            cli->setCallbackNonce([&total_nonce](std::int64_t nonce)
+            cli->setCallbackNonce([&total_nonce, &total_nonce_1block](std::int64_t nonce)
             {
                 total_nonce += nonce;
+                total_nonce_1block += nonce;
             });
         }
     }
