@@ -6,8 +6,10 @@
 #include <list>
 #include <cstdint>
 #include <utility>
+#include <functional>
 
 #include "Blockchain.hpp"
+#include "Operation.hpp"
 
 class Server
 {
@@ -25,6 +27,11 @@ public:
     void log(std::initializer_list<std::string> messages) const;
 
     void run();
+
+private:
+    std::function<void(Operation, std::uint32_t)> m_callback = [](Operation op, std::uint32_t block_id){};
+public:
+    inline void setCallback(decltype(m_callback) callback) { m_callback = callback; }
     
 private:
     Mode m_mode;

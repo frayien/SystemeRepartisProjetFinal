@@ -178,6 +178,8 @@ void Client::mine(Block & block, std::uint32_t difficulty)
     }
     while (!block.sHash.starts_with(prefix_str) && m_shouldMine);
 
+    m_callback_nonce(block.nNonce + 1);
+
     log({"Block mined with hash : ", block.sHash});
 }
 

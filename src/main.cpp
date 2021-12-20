@@ -1,4 +1,7 @@
 #include <iostream>
+#include <atomic>
+#include <array>
+#include <random>
 
 #include <SFML/Network.hpp>
 #include <SFML/System/Thread.hpp>
@@ -8,16 +11,33 @@
 #include "Server.hpp"
 #include "Client.hpp"
 
+std::string random_string(std::size_t size)
+{
+    std::array<char, 26> letters { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'z' };
+    std::mt19937 random_engine(std::random_device{}());
+    std::uniform_int_distribution dist(0, 25);
+
+    std::string ret;
+    for(std::size_t i = 0; i < size; ++i)
+    {
+        ret += letters[dist(random_engine)];
+    }
+
+    return ret;
+}
+
 int main(int argc, char** argv)
 {
     std::uint16_t serverPort = 5643;
     std::string serverIp = "localhost";
     
     std::uint32_t difficulty = 5;
-    Server::Mode mode = Server::Mode::PoW;
+    Server::Mode mode = Server::Mode::PoS;
 
     bool doRunServer = true;
     std::size_t client_n = 10;
+
+    bool benchmark_mode = true;
 
     bool running = true;
 
@@ -31,6 +51,13 @@ int main(int argc, char** argv)
     };
 
     std::vector<ClientRunnable> clients;
+
+    sf::Clock benchmark_clock;
+    sf::Clock benchmark_clock_glob;
+    std::atomic_int64_t total_nonce = 0;
+    std::uint32_t prev_block_id = 0;
+    std::size_t benchmark_string_size = 20;
+    std::size_t benchmark_block_n = 10;
 
     if(doRunServer)
     {
@@ -88,6 +115,37 @@ int main(int argc, char** argv)
 
         client.client->connect();
     }
+    
+    if(benchmark_mode)
+    {
+        server->setCallback([&prev_block_id, &benchmark_clock, &benchmark_clock_glob, &benchmark_block_n, &clients, &benchmark_string_size, &total_nonce](Operation op, std::size_t i)
+        {
+            if(op == Operation::REQUEST_VALIDATION)
+            {
+                if(benchmark_block_n > 0)
+                {
+                    --benchmark_block_n;
+                    clients[0].client->sendTransaction(random_string(benchmark_string_size));
+                }
+                prev_block_id = i;
+                benchmark_clock.restart();
+            }
+            if(op == Operation::END_MINING && prev_block_id == i)
+            {
+                std::cout << "[BENCHMARK] MINED BLOCK " << prev_block_id << " IN " << benchmark_clock.getElapsedTime().asMilliseconds() << " MS" << std::endl;
+                std::cout << "[BENCHMARK] TOTAL TIME " << benchmark_clock_glob.getElapsedTime().asMilliseconds() << " MS" << std::endl;
+                std::cout << "[BENCHMARK] TOTAL HASH " << total_nonce << std::endl;
+            }
+        });
+
+        for(auto& [cli, thead] : clients)
+        {
+            cli->setCallbackNonce([&total_nonce](std::int64_t nonce)
+            {
+                total_nonce += nonce;
+            });
+        }
+    }
 
     while(running)
     {
@@ -124,6 +182,15 @@ int main(int argc, char** argv)
                 sf::sleep(sf::milliseconds(50));
                 server_thread->terminate();
             }
+        }
+        else if(cmd == "benchmark")
+        {
+            benchmark_clock.restart();
+            benchmark_clock_glob.restart();
+            total_nonce = 0;
+            benchmark_block_n = 10;
+
+            clients[0].client->sendTransaction(random_string(benchmark_string_size));
         }
 
         sf::sleep(sf::milliseconds(10));

@@ -25,6 +25,11 @@ public:
     void log(std::initializer_list<std::string> messages) const;
 
 private:
+    std::function<void(std::int64_t)> m_callback_nonce = [](std::int64_t nonce){};
+public:
+    inline void setCallbackNonce(decltype(m_callback_nonce) callback) { m_callback_nonce = callback; }
+
+private:
     sf::IpAddress m_serverAddress;
     std::uint16_t m_serverPort;
     std::size_t m_id;

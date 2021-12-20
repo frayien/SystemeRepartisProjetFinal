@@ -1,7 +1,5 @@
 #include "Server.hpp"
 
-#include "Operation.hpp"
-
 #include <stdexcept>
 #include <sstream>
 #include <random>
@@ -159,6 +157,8 @@ void Server::sendBlockForValidation()
     packet << m_blockchain.getDifficulty();
     packet << m_currentlyMinedBlock;
 
+    m_callback(Operation::REQUEST_VALIDATION, m_currentlyMinedBlock.nIndex);
+
     if (m_mode == Mode::PoW)
     {
         for(const auto& [ipaddr, port] : m_clients)
@@ -202,6 +202,8 @@ void Server::handleFoundNonce(sf::Packet & packet)
     if(m_currentlyMinedBlock.nIndex != index) throw std::runtime_error("Error received wrong block.");
 
     m_currentlyMinedBlock.nNonce = nonce;
+
+    m_callback(Operation::FOUND_NONCE, index);
 
     if(m_mode == Mode::PoW)
     {
@@ -281,6 +283,8 @@ void Server::endMining()
     m_currentlyMinedBlock.sHash = m_currentlyMinedBlock.CalculateHash();
     m_blockchain.AddBlock(m_currentlyMinedBlock);
     sendEndMining();
+
+    m_callback(Operation::END_MINING, m_currentlyMinedBlock.nIndex);
     
     if(!m_nextBlockData.empty())
     {
